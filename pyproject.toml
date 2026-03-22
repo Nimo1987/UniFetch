@@ -1,0 +1,84 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "unifetch"
+version = "1.0.0"
+description = "UniFetch - 统一的社交媒体和金融数据下载工具"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+authors = [
+    {name = "UniFetch Contributors"},
+]
+keywords = [
+    "unifetch",
+    "social-media",
+    "downloader",
+    "youtube",
+    "twitter",
+    "instagram",
+    "tiktok",
+    "xiaohongshu",
+    "douyin",
+    "bilibili",
+    "weibo",
+    "wechat",
+    "finance",
+    "stock",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+
+dependencies = [
+    "yt-dlp>=2024.1.0",
+    "instaloader>=4.10",
+    "bilibili-api-python>=16.0.0",
+    "httpx[http2,socks]>=0.25.0",
+    "requests>=2.31.0",
+    "click>=8.0.0",
+    "rich>=13.0.0",
+    "pydantic>=2.0.0",
+    "akshare>=1.14.0",
+]
+
+[project.optional-dependencies]
+api = ["fastapi>=0.100.0", "uvicorn>=0.23.0"]
+llm = ["openai>=1.0.0"]
+all = [
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+    "openai>=1.0.0",
+]
+
+[project.scripts]
+unifetch = "unifetch.cli.main:main"
+
+[project.urls]
+Homepage = "https://github.com/yourusername/UniFetch"
+Repository = "https://github.com/yourusername/UniFetch"
+Documentation = "https://github.com/yourusername/UniFetch#readme"
+Issues = "https://github.com/yourusername/UniFetch/issues"
+
+[tool.setuptools.packages.find]
+include = ["unifetch*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+ignore = ["E501"]
