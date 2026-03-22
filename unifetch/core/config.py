@@ -47,6 +47,7 @@ class ProxyConfig:
     http: Optional[str] = None
     https: Optional[str] = None
     socks5: Optional[str] = None
+    fallback: Optional[str] = None  # fallback 代理（直连失败后使用，如 spider-proxy）
 
     def get_proxy_url(self) -> Optional[str]:
         """获取代理URL"""
@@ -132,7 +133,7 @@ class ConfigManager:
         初始化配置管理器
 
         Args:
-            config_path: 配置文件路径，默认为 ~/.social_downloader/config.json
+            config_path: 配置文件路径，默认为 ~/.unifetch/config.json
         """
         self.config_path = config_path or DEFAULT_CONFIG_FILE
         self._ensure_config_dir()

@@ -73,3 +73,12 @@ downloads/
 !package.json
 !pyproject.toml
 config.json
+
+# Media downloads
+*.mp4
+*.m4s
+*.webm
+*.flv
+*.jpg
+*.png
+*.webp

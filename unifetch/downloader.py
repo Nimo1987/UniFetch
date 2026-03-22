@@ -21,15 +21,6 @@ from .china.handlers import (
     WeixinHandler,
 )
 
-# 尝试导入FinanceHandler（可选依赖akshare）
-try:
-    from .finance import FinanceHandler
-
-    FINANCE_AVAILABLE = True
-except ImportError:
-    FINANCE_AVAILABLE = False
-    FinanceHandler = None
-
 
 class Downloader:
     """
@@ -41,26 +32,21 @@ class Downloader:
         print(result.analysis.summary)
     """
 
-    # Handler映射
-    HANDLER_MAP = {
-        Platform.YOUTUBE: lambda url, **kw: YtDlpHandler(url, Platform.YOUTUBE, **kw),
-        Platform.TWITTER: lambda url, **kw: YtDlpHandler(url, Platform.TWITTER, **kw),
-        Platform.FACEBOOK: lambda url, **kw: YtDlpHandler(url, Platform.FACEBOOK, **kw),
-        Platform.TIKTOK: lambda url, **kw: YtDlpHandler(url, Platform.TIKTOK, **kw),
-        Platform.REDDIT: lambda url, **kw: YtDlpHandler(url, Platform.REDDIT, **kw),
-        Platform.INSTAGRAM: lambda url, **kw: InstagramHandler(url, **kw),
-        Platform.XIAOHONGSHU: lambda url, **kw: XHSHandler(url, **kw),
-        Platform.DOUYIN: lambda url, **kw: DouyinHandler(url, **kw),
-        Platform.BILIBILI: lambda url, **kw: BilibiliHandler(url, **kw),
-        Platform.WEIBO: lambda url, **kw: WeiboHandler(url, **kw),
-        Platform.WEIXIN: lambda url, **kw: WeixinHandler(url, **kw),
-        Platform.FINANCE: lambda url, **kw: (
-            FinanceHandler(url, **kw)
-            if FINANCE_AVAILABLE
-            else (_ for _ in ()).throw(
-                ImportError("请安装akshare: pip install akshare")
-            )
-        ),
+    # Handler映射 — 使用 (handler_class, *args) 形式，避免 lambda hack
+    _HANDLER_REGISTRY = {
+        Platform.YOUTUBE: (YtDlpHandler, Platform.YOUTUBE),
+        Platform.TWITTER: (YtDlpHandler, Platform.TWITTER),
+        Platform.FACEBOOK: (YtDlpHandler, Platform.FACEBOOK),
+        Platform.TIKTOK: (YtDlpHandler, Platform.TIKTOK),
+        Platform.REDDIT: (YtDlpHandler, Platform.REDDIT),
+        Platform.INSTAGRAM: (InstagramHandler,),
+        Platform.XIAOHONGSHU: (XHSHandler,),
+        Platform.DOUYIN: (DouyinHandler,),
+        Platform.BILIBILI: (BilibiliHandler,),
+        Platform.WEIBO: (WeiboHandler,),
+        Platform.WEIXIN: (WeixinHandler,),
+        # Finance 懒加载：不在 import 时要求 akshare
+        Platform.FINANCE: None,
     }
 
     def __init__(
@@ -85,6 +71,47 @@ class Downloader:
         self.cookies = cookies or {}
         self.analyzer = LLMAnalyzer(llm_config)
 
+    def _get_handler(self, url: str) -> BaseHandler:
+        """获取URL对应的Handler"""
+        parsed = URLRouter.parse(url)
+
+        if not parsed["supported"]:
+            raise ValueError(f"不支持的URL: {url}")
+
+        platform = parsed["platform"]
+
+        if platform == Platform.FINANCE:
+            return self._build_finance_handler(url)
+
+        entry = self._HANDLER_REGISTRY.get(platform)
+        if entry is None:
+            raise ValueError(f"未实现的平台Handler: {platform}")
+
+        handler_cls = entry[0]
+        extra_args = entry[1:]
+        cookie = self.cookies.get(platform.value)
+
+        return handler_cls(
+            url,
+            *extra_args,
+            proxy=self.proxy,
+            cookie=cookie,
+            output_dir=self.output_dir,
+        )
+
+    def _build_finance_handler(self, url: str):
+        """懒加载 FinanceHandler，仅在使用时要求 akshare"""
+        try:
+            from .finance import FinanceHandler
+        except ImportError:
+            raise ImportError("请安装akshare: pip install akshare")
+
+        return FinanceHandler(
+            url,
+            proxy=self.proxy,
+            output_dir=self.output_dir,
+        )
+
     async def analyze(self, url: str) -> FetchResult:
         """
         分析URL内容（获取信息 + LLM分析）
@@ -96,13 +123,8 @@ class Downloader:
             FetchResult: 包含内容和分析结果
         """
         try:
-            # 1. 获取Handler
             handler = self._get_handler(url)
-
-            # 2. 获取内容信息
             content = await handler.fetch()
-
-            # 3. LLM分析
             analysis = await self.analyzer.analyze(content)
 
             return FetchResult(
@@ -153,11 +175,7 @@ class Downloader:
         """
         try:
             handler = self._get_handler(url)
-
-            # 先获取信息
             content = await handler.fetch()
-
-            # 下载
             filepath = await handler.download(quality)
 
             return FetchResult(
@@ -182,32 +200,6 @@ class Downloader:
         """
         tasks = [self.analyze(url) for url in urls]
         return await asyncio.gather(*tasks)
-
-    def _get_handler(self, url: str) -> BaseHandler:
-        """获取URL对应的Handler"""
-        # 解析URL
-        parsed = URLRouter.parse(url)
-
-        if not parsed["supported"]:
-            raise ValueError(f"不支持的URL: {url}")
-
-        platform = parsed["platform"]
-
-        # 获取Handler工厂
-        handler_factory = self.HANDLER_MAP.get(platform)
-        if not handler_factory:
-            raise ValueError(f"未实现的平台Handler: {platform}")
-
-        # 获取平台Cookie
-        cookie = self.cookies.get(platform.value)
-
-        # 创建Handler
-        return handler_factory(
-            url,
-            proxy=self.proxy,
-            cookie=cookie,
-            output_dir=self.output_dir,
-        )
 
     @staticmethod
     def get_supported_platforms() -> list:

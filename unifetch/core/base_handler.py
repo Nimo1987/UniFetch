@@ -15,6 +15,7 @@ from ..models.content import (
     MediaFile,
     FetchResult,
 )
+from ..utils.proxy_client import ProxyClient
 
 
 class BaseHandler(ABC):
@@ -49,6 +50,30 @@ class BaseHandler(ABC):
         # 解析结果缓存
         self._content: Optional[Content] = None
 
+    def get_http_client(
+        self, fallback_proxy: Optional[str] = None, **kwargs
+    ) -> ProxyClient:
+        """
+        获取带代理 fallback 的 HTTP 客户端
+
+        Args:
+            fallback_proxy: 额外的 fallback 代理地址
+            **kwargs: 传递给 ProxyClient 的额外参数
+
+        Returns:
+            ProxyClient 实例（需用 async with 使用）
+        """
+        headers = kwargs.pop("headers", {})
+        if self.cookie:
+            headers["Cookie"] = self.cookie
+
+        return ProxyClient(
+            proxy=self.proxy,
+            fallback_proxy=fallback_proxy,
+            headers=headers or None,
+            **kwargs,
+        )
+
     @abstractmethod
     async def fetch(self) -> Content:
         """
@@ -82,6 +107,17 @@ class BaseHandler(ABC):
         if self._content is None:
             self._content = await self.fetch()
         return self._content
+
+    @staticmethod
+    def format_url(url: str) -> str:
+        """格式化 URL，处理 // 前缀和缺失协议"""
+        if not url:
+            return ""
+        if url.startswith("//"):
+            return f"https:{url}"
+        if not url.startswith("http"):
+            return f"https://{url}"
+        return url
 
     def create_content(
         self,

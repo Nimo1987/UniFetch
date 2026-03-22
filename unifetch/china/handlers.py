@@ -69,7 +69,7 @@ class XHSHandler(BaseHandler):
             id=author_data.get("user_id"),
             username=author_data.get("nickname"),
             nickname=author_data.get("nickname"),
-            avatar=self._format_url(author_data.get("avatar", {}).get("url", "")),
+            avatar=self.format_url(author_data.get("avatar", {}).get("url", "")),
         )
 
         # 构建媒体文件
@@ -130,7 +130,7 @@ class XHSHandler(BaseHandler):
             author=author,
             media_files=media_files,
             cover_url=self._extract_image_url(note_info.get("cover", {}))
-            or self._format_url(note_info.get("cover", {}).get("urlDefault", "")),
+            or self.format_url(note_info.get("cover", {}).get("urlDefault", "")),
             likes=self._parse_count(interact_info.get("likedCount", "0")),
             comments_count=self._parse_count(interact_info.get("commentCount", "0")),
             shares=self._parse_count(interact_info.get("shareCount", "0")),
@@ -294,7 +294,7 @@ class XHSHandler(BaseHandler):
                         data_str = json_match.group(1)
                         data_str = data_str.replace("undefined", "null")
                         return json.loads(data_str)
-                except:
+                except (json.JSONDecodeError, AttributeError):
                     continue
 
         return {}
@@ -311,7 +311,7 @@ class XHSHandler(BaseHandler):
             or img_data.get("imageList", [{}])[0].get("urlDefault", "")
         )
 
-        return self._format_url(url)
+        return self.format_url(url)
 
     def _extract_video_url(self, video_data: Dict) -> Optional[str]:
         """提取视频URL"""
@@ -335,15 +335,6 @@ class XHSHandler(BaseHandler):
 
         return None
 
-    def _format_url(self, url: str) -> str:
-        """格式化URL"""
-        if not url:
-            return ""
-        if url.startswith("//"):
-            return f"https:{url}"
-        if not url.startswith("http"):
-            return f"https://{url}"
-        return url
 
     def _parse_count(self, count_str: str) -> int:
         """解析数量字符串（支持万、亿等单位）"""
@@ -570,7 +561,7 @@ class DouyinHandler(BaseHandler):
                         # 处理JavaScript特殊值
                         data_str = re.sub(r":\s*undefined", ":null", data_str)
                         return json.loads(data_str)
-                except:
+                except (json.JSONDecodeError, AttributeError):
                     pass
 
         return {}
@@ -1151,7 +1142,7 @@ class WeiboHandler(BaseHandler):
 
             if url:
                 # 确保URL格式正确
-                url = self._format_url(url)
+                url = self.format_url(url)
                 media_files.append(
                     MediaFile(
                         url=url,
@@ -1190,7 +1181,7 @@ class WeiboHandler(BaseHandler):
                     or media_info.get("stream_url")
                 )
                 if url:
-                    return self._format_url(url)
+                    return self.format_url(url)
 
         # 从pics中提取视频
         pics = weibo_info.get("pics", [])
@@ -1198,12 +1189,12 @@ class WeiboHandler(BaseHandler):
             if isinstance(pic, dict) and pic.get("type") == "video":
                 video_src = pic.get("videoSrc") or pic.get("video_src")
                 if video_src:
-                    return self._format_url(video_src)
+                    return self.format_url(video_src)
 
         # 检查live_photo
         live_photo = weibo_info.get("live_photo", [])
         if live_photo and isinstance(live_photo, list):
-            return self._format_url(live_photo[0])
+            return self.format_url(live_photo[0])
 
         return None
 
@@ -1244,15 +1235,6 @@ class WeiboHandler(BaseHandler):
         text = re.sub(r"\s+", " ", text).strip()
         return text
 
-    def _format_url(self, url: str) -> str:
-        """格式化URL"""
-        if not url:
-            return ""
-        if url.startswith("//"):
-            return f"https:{url}"
-        if not url.startswith("http"):
-            return f"https://{url}"
-        return url
 
     def _parse_cookie(self, cookie_str: str) -> Dict[str, str]:
         """解析Cookie字符串"""
