@@ -67,10 +67,10 @@ all = [
 unifetch = "unifetch.cli.main:main"
 
 [project.urls]
-Homepage = "https://github.com/yourusername/UniFetch"
-Repository = "https://github.com/yourusername/UniFetch"
-Documentation = "https://github.com/yourusername/UniFetch#readme"
-Issues = "https://github.com/yourusername/UniFetch/issues"
+Homepage = "https://github.com/Nimo1987/UniFetch"
+Repository = "https://github.com/Nimo1987/UniFetch"
+Documentation = "https://github.com/Nimo1987/UniFetch#readme"
+Issues = "https://github.com/Nimo1987/UniFetch/issues"
 
 [tool.setuptools.packages.find]
 include = ["unifetch*"]

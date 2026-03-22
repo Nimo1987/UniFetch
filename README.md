@@ -20,7 +20,7 @@
 
 ```
 请帮我安装 UniFetch，执行以下命令：
-pip install git+https://github.com/yourusername/UniFetch.git
+pip install git+https://github.com/Nimo1987/UniFetch.git
 ```
 
 或者本地安装：
@@ -301,7 +301,7 @@ unifetch/
 
 ```bash
 # 克隆项目
-git clone https://github.com/yourusername/UniFetch.git
+git clone https://github.com/Nimo1987/UniFetch.git
 cd UniFetch
 
 # 创建虚拟环境
